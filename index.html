@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Blog · Scaling React & Node.js (full‑width)</title>
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* RESET & GLOBAL — memenuhi seluruh viewport */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: #f6f9fe;  /* soft background, no empty zones */
+            color: #1a2b3e;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        /* background full dengan aksen garis dinamis */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.03) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 70%, rgba(99, 102, 241, 0.03) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* ----- LAYOUT FLEKSIBEL PENUH (TIDAK ADA KOTAK TENGAH) ----- */
+        .site-wrapper {
+            width: 100%;
+            max-width: 1440px;         /* batas baca nyaman, tapi background penuh */
+            margin: 0 auto;
+            padding: 1.5rem 5%;        /* proporsional, melebar */
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        /* header fleksibel */
+        .blog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1.2rem 2rem;
+            margin-bottom: 2.2rem;
+            padding: 0.4rem 0;
+            border-bottom: 2px solid rgba(37, 99, 235, 0.1);
+            width: 100%;
+        }
+
+        .logo-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 12px 18px -8px rgba(37, 99, 235, 0.3);
+        }
+
+        .logo-text {
+            font-weight: 800;
+            font-size: 1.7rem;
+            letter-spacing: -0.03em;
+            background: linear-gradient(145deg, #17273f, #2563eb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .reading-toolbar {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(6px);
+            padding: 0.5rem 1.4rem;
+            border-radius: 60px;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            box-shadow: 0 6px 14px rgba(0, 10, 30, 0.05);
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .reading-toolbar i {
+            color: #2563eb;
+            font-size: 1.2rem;
+        }
+
+        .badge-8min {
+            background: #2563eb;
+            color: white;
+            font-weight: 600;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            margin-left: 0.2rem;
+        }
+
+        /* TIDAK ADA CARD TERKOTAK — SECTION MEMANJANG */
+        .main-article {
+            width: 100%;
+            background: transparent;  /* tanpa white box */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* meta informasi */
+        .article-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem 2rem;
+            margin: 0.8rem 0 1.6rem 0;
+        }
+
+        .category-pill {
+            background: rgba(37, 99, 235, 0.1);
+            padding: 0.4rem 1.4rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: 1px solid rgba(37, 99, 235, 0.2);
+        }
+
+        .date-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #3b4e66;
+            font-weight: 500;
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 8vw, 4rem);  /* fluid typography */
+            font-weight: 800;
+            line-height: 1.2;
+            letter-spacing: -0.03em;
+            margin: 0.75rem 0 1.5rem 0;
+            max-width: 1200px;
+            background: linear-gradient(145deg, #0b1f33, #1e4ab0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* author section full-width */
+        .author-section {
+            display: flex;
+            align-items: center;
+            gap: 1.2rem;
+            flex-wrap: wrap;
+            padding: 1.8rem 0;
+            border-top: 2px dashed rgba(37, 99, 235, 0.2);
+            border-bottom: 2px dashed rgba(37, 99, 235, 0.2);
+            width: 100%;
+        }
+
+        .author-avatar {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(145deg, #2563eb, #7e5bef);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.8rem;
+            box-shadow: 0 12px 18px -8px #2563eb70;
+            flex-shrink: 0;
+        }
+
+        .author-details {
+            flex: 1;
+        }
+
+        .author-name {
+            font-weight: 700;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .author-bio {
+            color: #365277;
+        }
+
+        .time-badge-large {
+            background: white;
+            padding: 0.6rem 1.8rem;
+            border-radius: 60px;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+            border: 1px solid #cdddec;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .time-badge-large i {
+            color: #2563eb;
+            font-size: 1.4rem;
+        }
+
+        /* floating TOC — tetap melebar */
+        .toc-wrapper {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 28px;
+            padding: 1.8rem 2.2rem;
+            margin: 2rem 0 1.5rem 0;
+            border: 1px solid #ffffff;
+            box-shadow: 0 10px 30px -12px #1e2f4a;
+        }
+
+        .toc-title {
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .toc-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 2.5rem;
+        }
+
+        .toc-grid a {
+            text-decoration: none;
+            color: #1f3a6b;
+            font-weight: 550;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s;
+            font-size: 1rem;
+        }
+
+        .toc-grid a:hover {
+            border-bottom-color: #2563eb;
+            color: #2563eb;
+        }
+
+        /* konten utama melebar */
+        .content-body {
+            width: 100%;
+            font-size: 1.1rem;
+            color: #1f2f41;
+            margin: 1.5rem 0 2rem 0;
+        }
+
+        .content-body h2 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin: 2.5rem 0 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            color: #10243e;
+            border-left: 8px solid #2563eb;
+            padding-left: 1.3rem;
+        }
+
+        .content-body h3 {
+            font-size: 1.6rem;
+            font-weight: 650;
+            margin: 2rem 0 0.8rem 0;
+            color: #1e3d70;
+        }
+
+        .content-body p {
+            margin-bottom: 1.5rem;
+            max-width: 100%;
+        }
+
+        .code-block {
+            background: #0e1a2b;
+            color: #dbeafe;
+            padding: 1.6rem 2rem;
+            border-radius: 28px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.95rem;
+            overflow-x: auto;
+            margin: 2rem 0;
+            border-left: 6px solid #3b82f6;
+            box-shadow: inset 0 0 0 1px #2d405b;
+            width: 100%;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin: 2rem 0;
+        }
+
+        .feature-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+            font-size: 1.05rem;
+        }
+
+        .feature-list i {
+            color: #2563eb;
+            font-size: 1.4rem;
+            min-width: 2rem;
+        }
+
+        .pro-box {
+            background: linear-gradient(120deg, #edf4ff, #ffffff);
+            border-radius: 30px;
+            padding: 2rem 2.5rem;
+            margin: 2.5rem 0;
+            border: 1px solid #b9d3f0;
+            width: 100%;
+        }
+
+        /* footer artikel full-width */
+        .article-footer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 3.5rem;
+            padding-top: 2rem;
+            border-top: 2px solid #cad9f0;
+            width: 100%;
+            gap: 1.5rem;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .tag-cloud span {
+            background: #eaf1fd;
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: 1px solid #bdd1eb;
+        }
+
+        .share-links i {
+            font-size: 1.8rem;
+            margin-left: 1rem;
+            color: #42648d;
+            transition: color 0.2s;
+            cursor: default;
+        }
+
+        .share-links i:hover {
+            color: #2563eb;
+        }
+
+        /* navigasi bawah */
+        .bottom-nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            margin: 2.5rem 0 1rem 0;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        .bottom-nav a {
+            text-decoration: none;
+            color: #2b4f8c;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.5);
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            border: 1px solid #bdd1eb;
+        }
+
+        /* responsif halus */
+        @media (max-width: 700px) {
+            .site-wrapper {
+                padding: 1rem 6%;
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+            .toc-wrapper {
+                padding: 1.4rem 1.6rem;
+            }
+            .pro-box {
+                padding: 1.4rem 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .author-section {
+                flex-direction: column;
+                align-items: start;
+            }
+            .reading-toolbar {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        /* tidak ada elemen yang dikotak kecil di tengah — semuanya melebar */
+        .no-center-box {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="site-wrapper">
+        <!-- header melebar -->
+        <header class="blog-header">
+            <div class="logo-group">
+                <div class="logo-icon"><i class="fas fa-bolt"></i></div>
+                <span class="logo-text">reactscale.dev</span>
+            </div>
+        </header>
+
+        <!-- konten utama tanpa pembungkus sempit -->
+        <main class="main-article">
+            <!-- meta bar -->
+            <div class="article-meta">
+                <span class="category-pill"><i class="fab fa-react"></i> React & Node.js</span>
+                <span class="category-pill"><i class="fas fa-chart-bar"></i> Arsitektur Skala Besar</span>
+                <span class="date-badge"><i class="far fa-calendar-alt"></i> 23 Februari 2026</span>
+            </div>
+
+            <!-- judul besar -->
+            <h1>Building Scalable Applications with React and Node.js</h1>
+
+            <!-- author section melebar -->
+            <div class="author-section">
+                <div class="author-avatar">R.A</div>
+                <div class="author-details">
+                    <div class="author-name">Reynando Alviano <i class="fas fa-check-circle" style="color:#2563eb;"></i></div>
+                    <div class="author-bio">Web Developer</div>
+                </div>
+            </div>
+
+            <!-- TOC melebar (bukan card sempit) -->
+            <div class="toc-wrapper">
+                <div class="toc-title"><i class="fas fa-list-ul" style="color:#2563eb;"></i> Dalam artikel ini (langsung ke topik)</div>
+                <div class="toc-grid">
+                    <a href="#pilar"><i class="fas fa-arrow-right"></i> 3 pilar skalabilitas</a>
+                    <a href="#react"><i class="fas fa-arrow-right"></i> React pattern</a>
+                    <a href="#node"><i class="fas fa-arrow-right"></i> Node.js cluster</a>
+                    <a href="#data"><i class="fas fa-arrow-right"></i> data & caching</a>
+                    <a href="#deploy"><i class="fas fa-arrow-right"></i> deployment</a>
+                </div>
+            </div>
+
+            <!-- KONTEN FULL-LEBAR, tanpa pembatas -->
+            <div class="content-body">
+                <p style="font-size:1.2rem; font-weight:500;">Membangun aplikasi yang melayani jutaan pengguna bukan hanya tentang menambah server. Kita bedah arsitektur <strong>React + Node.js</strong> yang elastis, dengan contoh kode dan strategi production-grade. <i class="fas fa-microchip" style="color:#2563eb;"></i></p>
+
+                <h2 id="pilar"><i class="fas fa-cubes"></i> 1. Tiga pilar skalabilitas</h2>
+                <p><strong>Horizontal scaling, microservice readiness, dan efisiensi sumber daya.</strong> React di frontend harus ringan dengan code splitting, sementara Node.js perlu menangani I/O non-blocking dan stateless design. Prinsip utama:</p>
+                <ul class="feature-list">
+                    <li><i class="fas fa-puzzle-piece"></i> <strong>Decouple services</strong> – pisahkan frontend, API, dan background worker.</li>
+                    <li><i class="fas fa-database"></i> <strong>Shared-nothing</strong> – simpan session di Redis, jangan di memory proses.</li>
+                    <li><i class="fas fa-balance-scale"></i> <strong>Load balancing</strong> – distribusi request dengan Nginx atau AWS ALB.</li>
+                </ul>
+
+                <h2 id="react"><i class="fab fa-react"></i> 2. React: arsitektur untuk skala tim & fitur</h2>
+                <p>Di proyek besar, struktur folder dan manajemen state sangat krusial. Gunakan <strong>module pattern</strong> (feature-first). Lazy load komponen berat dengan <code>React.lazy</code> dan Suspense.</p>
+                <div class="code-block">
+                    <span style="color:#a3c6ff;">// code splitting example</span><br>
+                    const AnalyticsDashboard = React.lazy(() => import('./Analytics'));<br><br>
+                    function App() {<br>
+                    &nbsp;&nbsp;return (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&lt;Suspense fallback={&lt;Loader /&gt;}&gt;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;AnalyticsDashboard /&gt;<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&lt;/Suspense&gt;<br>
+                    &nbsp;&nbsp;);<br>
+                    }
+                </div>
+                <p>Pakai <strong>React Query</strong> atau SWR untuk caching server state. Ini mengurangi beban API dan membuat UI responsif.</p>
+
+                <h2 id="node"><i class="fab fa-node"></i> 3. Node.js: cluster, worker, dan beyond</h2>
+                <p>Node.js single-thread, tapi kita bisa manfaatkan <strong>cluster module</strong> untuk multi-core. Tambahkan <strong>worker threads</strong> untuk CPU-intensive tasks (seperti image processing). Jangan lupa <strong>graceful shutdown</strong> dan manajemen error terpusat.</p>
+                <div class="code-block">
+                    <span style="color:#a3c6ff;">// cluster example (simplified)</span><br>
+                    const cluster = require('cluster');<br>
+                    const http = require('http');<br>
+                    const numCPUs = require('os').cpus().length;<br><br>
+                    if (cluster.isMaster) {<br>
+                    &nbsp;&nbsp;for (let i = 0; i &lt; numCPUs; i++) cluster.fork();<br>
+                    &nbsp;&nbsp;cluster.on('exit', (worker) => cluster.fork());<br>
+                    } else {<br>
+                    &nbsp;&nbsp;http.createServer((req, res) => {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;res.end('Scaleable node');<br>
+                    &nbsp;&nbsp;}).listen(3000);<br>
+                    }
+                </div>
+
+                <div class="pro-box">
+                    <i class="fas fa-lightbulb" style="color:#2563eb; font-size:2rem; float:left; margin-right:1rem;"></i>
+                    <strong>Pro tip:</strong> Gunakan <strong>Fastify</strong> untuk latensi lebih rendah? Bisa, tetapi Express tetap oke jika ditambah middleware yang efisien. Yang penting: hindari blocking event loop.
+                    <div style="clear:both;"></div>
+                </div>
+
+                <h2 id="data"><i class="fas fa-chart-pie"></i> 4. Manajemen data & caching</h2>
+                <p>Redis wajib untuk session store, rate limiting, dan cache database query. Di React, <strong>GraphQL</strong> (Apollo) bisa mengurangi overfetching, tapi REST dengan OpenAPI juga scalable jika didesain dengan baik. Contoh pola cache di Node:</p>
+                <div class="code-block">
+                    <span style="color:#a3c6ff;">// redis caching pattern</span><br>
+                    const getProduct = async (id) => {<br>
+                    &nbsp;&nbsp;const cached = await redis.get(`product:${id}`);<br>
+                    &nbsp;&nbsp;if (cached) return JSON.parse(cached);<br>
+                    &nbsp;&nbsp;const product = await db.findProduct(id);<br>
+                    &nbsp;&nbsp;await redis.setex(`product:${id}`, 3600, JSON.stringify(product));<br>
+                    &nbsp;&nbsp;return product;<br>
+                    };
+                </div>
+
+                <h2 id="deploy"><i class="fas fa-cloud-upload-alt"></i> 5. Deployment & observability</h2>
+                <p>Kontainerisasi dengan Docker, orkestrasi Kubernetes, atau platform managed seperti AWS ECS. Tambahkan <strong>logging terstruktur</strong> (pino, winston) dan metrics (Prometheus). Distributed tracing dengan OpenTelemetry membantu menemukan bottleneck.</p>
+                <p>Autoscaling berdasarkan CPU/memory atau queue length. Pastikan <strong>health checks</strong> di setiap instance.</p>
+
+                <h3>Kesimpulan</h3>
+                <p>React dan Node.js bisa melayani skala besar jika dirancang dengan pemisahan concern, stateless, caching agresif, dan infrastruktur elastis. Tidak ada solusi tunggal – ukur, pantau, dan optimasi secara iteratif.</p>
+            </div>
+
+            <!-- footer artikel -->
+            <footer class="article-footer">
+                <div class="tag-cloud">
+                    <span>#reactjs</span>
+                    <span>#nodejs</span>
+                    <span>#scalability</span>
+                    <span>#highload</span>
+                    <span>#microservices</span>
+                </div>
+            </footer>
+        </main>
+    </div>
+</body>
+</html>
